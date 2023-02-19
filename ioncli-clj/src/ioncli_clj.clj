@@ -1,5 +1,6 @@
 (ns ioncli-clj
-  (:require [clojure-watch.core :refer [start-watch]]))
+  (:require [clojure-watch.core :refer [start-watch]]
+            [clojure.repl :as repl]))
 
 (declare connect connected? error? get-conn-status)
 (defn ensure-connect
@@ -22,7 +23,7 @@
                       (get-available-port)
                       (get-up-filename jinit)))
 
-(defn- dir [filename-abs]
+(defn- path-to [filename-abs]
   {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
   (->> (.split filename-abs "/")
        drop-last
@@ -44,7 +45,7 @@
 
 (defn- monitor-file [up-filename latch]
   (ensure-delete up-filename)
-  (start-watch [{:path (dir up-filename)
+  (start-watch [{:path (path-to up-filename)
                  :event-types [:create]
                  :callback (fn [_ abs-path]
                              (when (= (java.io.File. abs-path)
