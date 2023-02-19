@@ -1,0 +1,12 @@
+;; -*- coding: utf-8-unix -*-
+;; Automatically written history of CIDER REPL session
+;; Edit at your own risk
+
+("(start-local-daemon \"\" 42 \"c:/temp/t\")" "(= (java.io.File. \"c:/temp/t\") (java.io.File. \"c:\\\\temp\\\\t\"))" "(= (java.io.File. \"c:/temp/t\") (java.io.File. \"c:/temp/t\"))" "(= (java.io/File. \"c:/temp/t\") (java.io/File. \"c:/temp/t\"))" "(clojure.java.shell/sh
+              \"java\" \"-version\")" "(System/getProperty \"user.dir\")" "(start-local-daemon \"\" 42 \"c:/temp/t\")" "(start-local-daemon \"\" 42 \"c:/temp/daemon\")" "(dir \"a\")" "(dir \"/a/b/c\")" "(dir \"/a\")" "(dir 42)" "(dir \"/a/b/c\")" "(dir \"/a/b\")" "(dir \"/a\")" "(dir \"a\")" "(start-local-daemon \"\" 42 \"c:/temp/daemon\")" "5_000" "5" "(start-local-daemon-async \"\" \"\" \"\")" "(start-local-daemon-async nil nil nil)" "(System/getProperty \"user.dir\")" "(start-local-daemon-async nil nil nil)" "(System/getProperty \"java.io.tmpdir\")" "(System/getProperty \"HOME\")" "(.contains \"ab\" \"a\")" "(clojure.java.io/delete-file \"c:/temp/t\" :silently)" "(start-watch [{:path \"c:/temp\"
+               :event-types [:create :delete]
+               :callback (fn [event filename] (println event filename))
+               :options {:recursive false}}])" "(start-watch [{:path \"c:/temp/t\"
+               :event-types [:create :delete]
+               :callback (fn [event filename] (println event filename))
+               :options {:recursive false}}])" "(require '[clojure-watch.core :refer [start-watch]])" "(clojure.java.io/delete-file \"c:/temp/t\" :silently)" "(clojure.java.io/delete-file \"c:/temp/t\")")
