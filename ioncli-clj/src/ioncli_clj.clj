@@ -1,6 +1,6 @@
 (ns ioncli-clj
   (:require [clojure-watch.core :refer [start-watch]]
-            [clojure.repl :as repl]))
+            [clojure.string :as str]))
 
 (declare connect connected? error? get-conn-status)
 (defn ensure-connect
@@ -23,25 +23,24 @@
                       (get-available-port)
                       (get-up-filename jinit)))
 
-(defn- path-to [filename-abs]
-  {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
-  (->> (.split filename-abs "/")
-       drop-last
-       (clojure.string/join "/")))
+(defn- get-available-port []
+  (let [s (java.net.ServerSocket. 0)]
+    (.close s)
+    (.getLocalPort s)))
+
+(declare to-map)
+(defn- get-up-filename [jinit]
+  (let [m (to-map jinit)]
+    (str (System/getProperty "java.io.tmpdir")
+         (clojure.string/join
+           "."
+           ["ioncli-daemon"
+            (get m "mkv.component")
+            (get m "mkv.cshost")
+            (get m "mkv.csport")]))))
 
 (defn- ensure-delete [up-filename]
   (clojure.java.io/delete-file up-filename :silently))
-
-(declare monitor-file start-local-daemon-async)
-(defn- start-local-daemon
-  "up-filename is the absolute path to file to be created when daemon is ready.
-  This function is not thread-safe. Blocks until daemon is
-  ready. Returns nil"
-  [jinit port up-filename]
-  (let [latch (java.util.concurrent.CountDownLatch. 1)]
-    (monitor-file up-filename latch)
-    (start-local-daemon-async jinit port up-filename)
-    (.await latch)))
 
 (defn- monitor-file [up-filename latch]
   (ensure-delete up-filename)
@@ -52,10 +51,34 @@
                                       (java.io.File. up-filename))
                                (.countDown latch)))
                  :options {:recursive false}}]))
-  
+
+(declare start-local-daemon-async)
+(defn- start-local-daemon
+  "up-filename is the absolute path to file to be created when daemon is ready.
+  This function is not thread-safe. Blocks until daemon is
+  ready. Returns nil"
+  [jinit port up-filename]
+  (let [latch (java.util.concurrent.CountDownLatch. 1)]
+    (monitor-file up-filename latch)
+    (start-local-daemon-async jinit port up-filename)
+    (.await latch)))
+ 
 (defn- start-local-daemon-async [jinit port up-filename]
   (let [status (clojure.java.shell/sh
                  "java" "-jar" Daemon-Jar
                  jinit (str port) up-filename)]
     (when (not= 0 (:exit status))
       (throw (RuntimeException. (:err status))))))
+
+(defn- to-map [props-filename]
+  (let [contents (slurp props-filename)]
+    (->> (str/split contents #"\n")
+         (map #(str/split % #"="))
+         (map (fn [[k v]] [(str/trim k) (str/trim v)]))
+         (into {}))))
+
+(defn- path-to [filename-abs]
+  {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
+  (->> (.split filename-abs "/")
+       drop-last
+       (clojure.string/join "/")))
