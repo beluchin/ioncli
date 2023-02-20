@@ -1,9 +1,11 @@
-(ns ioncli-daemon.core
+(ns ioncli-daemon
+  (:require [ion-clj.simple :as ion])
   (:gen-class))
 
 (declare touch)
 (defn -main [& [jinit port up-filename]]
-  (Thread/sleep 5000)
+  (println "Here !!!!!")
+  (ion/connect jinit)
   (touch up-filename))
 
 (defn- touch [filename]

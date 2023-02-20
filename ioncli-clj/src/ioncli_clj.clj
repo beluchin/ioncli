@@ -23,21 +23,29 @@
                       (get-available-port)
                       (get-up-filename jinit)))
 
+(defn- connected? [conn-status]
+  (= :already-connected conn-status))
+
+(defn- error? [conn-status]
+  (or (= :env-in-use conn-status)
+      (= :component-in-use conn-status)))
+
 (defn- get-available-port []
   (let [s (java.net.ServerSocket. 0)]
     (.close s)
     (.getLocalPort s)))
 
+(defn- get-conn-status [envname jinit] :not-connected)
+
 (declare to-map)
 (defn- get-up-filename [jinit]
   (let [m (to-map jinit)]
-    (str (System/getProperty "java.io.tmpdir")
-         (clojure.string/join
-           "."
-           ["ioncli-daemon"
-            (get m "mkv.component")
-            (get m "mkv.cshost")
-            (get m "mkv.csport")]))))
+    (str (str/replace (System/getProperty "java.io.tmpdir") "\\" "/")
+         (str/join "."
+                   ["ioncli-daemon"
+                    (get m "mkv.component")
+                    (get m "mkv.cshost")
+                    (get m "mkv.csport")]))))
 
 (defn- ensure-delete [up-filename]
   (clojure.java.io/delete-file up-filename :silently))
