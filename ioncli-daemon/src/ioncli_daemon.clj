@@ -4,7 +4,6 @@
 
 (declare touch)
 (defn -main [& [jinit port up-filename]]
-  (println "Here !!!!!")
   (ion/connect jinit)
   (touch up-filename))
 

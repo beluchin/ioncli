@@ -50,6 +50,7 @@
 (defn- ensure-delete [up-filename]
   (clojure.java.io/delete-file up-filename :silently))
 
+(declare path-to)
 (defn- monitor-file [up-filename latch]
   (ensure-delete up-filename)
   (start-watch [{:path (path-to up-filename)
@@ -59,6 +60,12 @@
                                       (java.io.File. up-filename))
                                (.countDown latch)))
                  :options {:recursive false}}]))
+
+(defn- path-to [filename-abs]
+  {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
+  (->> (.split filename-abs "/")
+       drop-last
+       (clojure.string/join "/")))
 
 (declare start-local-daemon-async)
 (defn- start-local-daemon
@@ -72,7 +79,13 @@
     (.await latch)))
  
 (defn- start-local-daemon-async [jinit port up-filename]
-  (let [status (clojure.java.shell/sh
+  (.exec (Runtime/getRuntime)
+                      (into-array String ;;clojure.java.shell/sh
+                                  ["cmd" "/C" "start" "/B"
+                                   "java" "-jar" Daemon-Jar
+                                   jinit (str port) up-filename]))
+  #_(let [status (clojure.java.shell/sh
+                 "cmd" "/C" "start"
                  "java" "-jar" Daemon-Jar
                  jinit (str port) up-filename)]
     (when (not= 0 (:exit status))
@@ -84,9 +97,3 @@
          (map #(str/split % #"="))
          (map (fn [[k v]] [(str/trim k) (str/trim v)]))
          (into {}))))
-
-(defn- path-to [filename-abs]
-  {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
-  (->> (.split filename-abs "/")
-       drop-last
-       (clojure.string/join "/")))
