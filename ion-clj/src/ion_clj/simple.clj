@@ -1,3 +1,3 @@
 (ns ion-clj.simple)
 
-(defn connect [jinit] (Thread/sleep 10000))
+(defn connect [jinit] (Thread/sleep 3000))

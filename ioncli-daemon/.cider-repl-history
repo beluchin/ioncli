@@ -2,4 +2,4 @@
 ;; Automatically written history of CIDER REPL session
 ;; Edit at your own risk
 
-nil
+("(def _8080 (-main :jinit \"8080\" \"c:/temp/t\"))" "(slacker/stop-slacker-server _8081)" "_8081" "(def _8081 *1)" "(-main :jinit \"8081\" \"c:/temp/t\")" "(-main :jinit \"8080\" \"c:/temp/t\")" "(Integer/parseInt \"42\")" "(Integer/getInteger \"42\")" "(Integer/parse \"42\")" "(read-string \"42\")" "(-main :jinit \"8080\" \"c:/temp/t\")" "(slacker/stop-slacker-server)" "(-main :jinit 8080 \"c:/temp/t\")" "(main :jinit 8080 \"c:/temp/t\")")

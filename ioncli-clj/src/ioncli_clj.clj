@@ -79,17 +79,13 @@
     (.await latch)))
  
 (defn- start-local-daemon-async [jinit port up-filename]
+  ;; could not get clojure.java.shell/sh to work asynch - it blocks
+  ;; until the Java process exits
   (.exec (Runtime/getRuntime)
-                      (into-array String ;;clojure.java.shell/sh
-                                  ["cmd" "/C" "start" "/B"
-                                   "java" "-jar" Daemon-Jar
-                                   jinit (str port) up-filename]))
-  #_(let [status (clojure.java.shell/sh
-                 "cmd" "/C" "start"
-                 "java" "-jar" Daemon-Jar
-                 jinit (str port) up-filename)]
-    (when (not= 0 (:exit status))
-      (throw (RuntimeException. (:err status))))))
+         (into-array String
+                     ["cmd" "/C" "start" "/B"
+                      "java" "-jar" Daemon-Jar
+                      jinit (str port) up-filename])))
 
 (defn- to-map [props-filename]
   (let [contents (slurp props-filename)]
