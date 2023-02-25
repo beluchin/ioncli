@@ -1,11 +1,14 @@
 (ns ioncli-clj
   (:require [clojure-watch.core :refer [start-watch]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [slacker.client :as slacker]))
 
 (declare connect connected? error? get-conn-status)
 (defn ensure-connect
   "does not connect if already connected.
-  returns one of :already-connected | :connected | :env-in-use | :component-in-use"
+  returns one of :already-connected | :connected | :env-in-use | :component-in-use
+
+  if successful, all rpc functions are available on this namespace"
   ([envname-or-jinit])
   ([envname jinit]
    (let [conn-status (get-conn-status envname jinit)]
@@ -17,14 +20,21 @@
 
 (def ^:private Daemon-Jar "resources/ioncli-daemon.jar")
 
-(declare get-available-port get-up-filename start-local-daemon)
-(defn- connect [envname jinit]
-  (start-local-daemon jinit
-                      (get-available-port)
-                      (get-up-filename jinit)))
+(declare get-available-port get-up-filename init-rpc-client start-local-daemon)
+(defn- connect 
+  ([envname jinit]
+   (let [port (get-available-port)]
+     (connect envname jinit port)
+     (println "started daemon on port" port)))
+  ([envname jinit port]
+   (start-local-daemon jinit port (get-up-filename jinit))
+   (init-rpc-client port)))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
+
+(defn- ensure-delete [up-filename]
+  (clojure.java.io/delete-file up-filename :silently))
 
 (defn- error? [conn-status]
   (or (= :env-in-use conn-status)
@@ -47,8 +57,15 @@
                     (get m "mkv.cshost")
                     (get m "mkv.csport")]))))
 
-(defn- ensure-delete [up-filename]
-  (clojure.java.io/delete-file up-filename :silently))
+(defn- init-rpc-client [port]
+  (def sc (slacker/slackerc (str "localhost:" port)))
+  (slacker/use-remote 'sc 'ioncli-daemon.rpc-api)
+
+  ;; this works! > (get-record :name :field-coll) => 42
+  #_(let [sc (slacker/slackerc (str "localhost:" port))]
+      #_(slacker/defn-remote sc ioncli-daemon.rpc-api/get-record)
+
+      sc))
 
 (declare path-to)
 (defn- monitor-file [up-filename latch]

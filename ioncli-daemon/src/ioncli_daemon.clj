@@ -4,16 +4,16 @@
             ioncli-daemon.rpc-api)
   (:gen-class))
 
-(declare init-rpc touch)
+(declare init-rpc-server touch)
 (defn -main [& [jinit port-str up-filename]]
-  (let [server (init-rpc (Integer/parseInt port-str))]
+  (let [server (init-rpc-server (Integer/parseInt port-str))]
     (ion/connect jinit)
     (touch up-filename)
 
     ;; return the slacker server to be able to stop it from the REPL
     server))
 
-(defn- init-rpc [port]
+(defn- init-rpc-server [port]
   (slacker/start-slacker-server [(the-ns 'ioncli-daemon.rpc-api)] port))
 
 (defn- touch [filename]
