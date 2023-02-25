@@ -1,14 +1,17 @@
 (ns ioncli-clj
-  (:require [clojure-watch.core :refer [start-watch]]
-            [clojure.string :as str]
-            [slacker.client :as slacker]))
+  (:require
+   [clojure-watch.core :refer [start-watch]]
+   [clojure.string :as str]
+   [ioncli-clj.internal :as internal]
+   [slacker.client :as slacker]))
+
+;; the (public) functions on this namespace are meant to mirror those you can
+;; call from the command line.
 
 (declare connect connected? error? get-conn-status)
 (defn ensure-connect
-  "does not connect if already connected.
-  returns one of :already-connected | :connected | :env-in-use | :component-in-use
-
-  if successful, all rpc functions are available on this namespace"
+  "Returns one of: 
+  :already-connected | :connected | :env-in-use | :component-in-use "
   ([envname-or-jinit])
   ([envname jinit]
    (let [conn-status (get-conn-status envname jinit)]
@@ -18,17 +21,26 @@
          conn-status)
        conn-status))))
 
-(def ^:private Daemon-Jar "resources/ioncli-daemon.jar")
+(declare call-remote new-rpc-client)
+(defn get-record
+  ([name field-coll])
+  ([env name field-coll]
+   (with-open [client (new-rpc-client env)]
+     (call-remote client 'get-record name field-coll))))
 
-(declare get-available-port get-up-filename init-rpc-client start-local-daemon)
+(def ^:private ^:const Daemon-Jar "resources/ioncli-daemon.jar")
+
+(defn- call-remote [client fn-symbol & args]
+  (internal/call-remote client fn-symbol args))
+
+(declare get-available-port get-up-filename start-local-daemon)
 (defn- connect 
   ([envname jinit]
    (let [port (get-available-port)]
      (connect envname jinit port)
      (println "started daemon on port" port)))
   ([envname jinit port]
-   (start-local-daemon jinit port (get-up-filename jinit))
-   (init-rpc-client port)))
+   (start-local-daemon jinit port (get-up-filename jinit))))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
@@ -47,6 +59,8 @@
 
 (defn- get-conn-status [envname jinit] :not-connected)
 
+(defn- get-port [env] 8080)
+
 (declare to-map)
 (defn- get-up-filename [jinit]
   (let [m (to-map jinit)]
@@ -57,15 +71,23 @@
                     (get m "mkv.cshost")
                     (get m "mkv.csport")]))))
 
-(defn- init-rpc-client [port]
-  (def sc (slacker/slackerc (str "localhost:" port)))
-  (slacker/use-remote 'sc 'ioncli-daemon.rpc-api)
+(defn- new-rpc-client [env]
+  (let [sc (slacker/slackerc (str "localhost:" (get-port env)))]
+    (reify
+      java.lang.AutoCloseable
+      (close [_] (slacker/close-slackerc sc))
 
-  ;; this works! > (get-record :name :field-coll) => 42
-  #_(let [sc (slacker/slackerc (str "localhost:" port))]
-      #_(slacker/defn-remote sc ioncli-daemon.rpc-api/get-record)
+      internal/RemoteCalling
+      (call-remote [client fn-symbol args]
+        (slacker/call-remote
+          sc
 
-      sc))
+          ;; the name of the remote namespace 
+          'ioncli-daemon.rpc-api
+                             
+          fn-symbol
+          args)))))
+      
 
 (declare path-to)
 (defn- monitor-file [up-filename latch]
@@ -110,3 +132,10 @@
          (map #(str/split % #"="))
          (map (fn [[k v]] [(str/trim k) (str/trim v)]))
          (into {}))))
+
+(comment 
+
+  (def cs (slacker/slackerc "localhost:8080"))
+  (slacker/call-remote sc 'ioncli-daemon.rpc-api 'get-record [:name :field-coll]) ;; => 42
+  (slacker/close-slackerc sc)
+  (slacker/call-remote sc 'ioncli-daemon.rpc-api 'get-record [:name :field-coll]))
