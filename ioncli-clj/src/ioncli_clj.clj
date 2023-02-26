@@ -1,6 +1,6 @@
 (ns ioncli-clj
   (:require
-   [clojure-watch.core :refer [start-watch]]
+   [clojure-watch.core :as fwatch]
    [clojure.string :as str]
    [ioncli-clj.internal :as internal]
    [slacker.client :as slacker]))
@@ -8,18 +8,17 @@
 ;; the (public) functions on this namespace are meant to mirror those you can
 ;; call from the command line.
 
-(declare connect connected? error? get-conn-status)
+(declare connect connected? error? error-str get-conn-status get-port)
 (defn ensure-connect
-  "Returns one of: 
-  :already-connected | :connected | :env-in-use | :component-in-use "
   ([env-or-jinit])
   ([env jinit]
    (let [conn-status (get-conn-status env jinit)]
      (if-not (error? conn-status)
        (if-not (connected? conn-status)
-         (do (connect env jinit) :connected)
-         conn-status)
-       conn-status))))
+         (do (connect env jinit)
+             (println "connected - daemon on port: " (get-port env)))
+         (println "already connected - daemon on port: " (get-port env)))
+       (println "error:" (error-str conn-status))))))
 
 (declare call-remote new-rpc-client)
 (defn get-record
@@ -34,13 +33,8 @@
   (internal/call-remote client fn-symbol args))
 
 (declare get-available-port get-up-filename start-local-daemon)
-(defn- connect 
-  ([env jinit]
-   (let [port (get-available-port)]
-     (connect env jinit port)
-     (println "started daemon on port" port)))
-  ([env jinit port]
-   (start-local-daemon port jinit (get-up-filename env))))
+(defn- connect [env jinit]
+  (start-local-daemon (get-available-port) jinit (get-up-filename env)))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
@@ -52,6 +46,8 @@
   (or (= :env-in-use conn-status)
       (= :component-in-use conn-status)))
 
+(defn- error-str [conn-status] (name conn-status))
+ 
 (defn- get-available-port []
   (let [s (java.net.ServerSocket. 0)]
     (.close s)
@@ -59,6 +55,7 @@
 
 (defn- get-conn-status [envname jinit] :not-connected)
 
+(declare to-map get-up-filename)
 (defn- get-port [env]
   (get (to-map (get-up-filename env)) "daemon.port"))
 
@@ -88,13 +85,18 @@
 (declare path-to)
 (defn- monitor-file [up-filename latch]
   (ensure-delete up-filename)
-  (start-watch [{:path (path-to up-filename)
-                 :event-types [:create]
-                 :callback (fn [_ abs-path]
-                             (when (= (java.io.File. abs-path)
-                                      (java.io.File. up-filename))
-                               (.countDown latch)))
-                 :options {:recursive false}}]))
+  (fwatch/start-watch [{:path (path-to up-filename)
+
+                        ;; monitoring for :create has a race condition
+                        ;; in which the monitor is invoked before the
+                        ;; contents of the file are written
+                        :event-types [:modify]
+                        
+                        :callback (fn [_ abs-path]
+                                    (when (= (java.io.File. abs-path)
+                                             (java.io.File. up-filename))
+                                      (.countDown latch)))
+                        :options {:recursive false}}]))
 
 (defn- path-to [filename-abs]
   {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
@@ -123,11 +125,11 @@
                       jinit (str port) up-filename])))
 
 (defn- to-map [props-filename]
-    (let [contents (slurp props-filename)]
-      (->> (str/split contents #"\n")
-           (map #(str/split % #"="))
-           (map (fn [[k v]] [(str/trim k) (str/trim v)]))
-           (into {}))))
+  (let [contents (slurp props-filename)]
+    (->> (str/split contents #"\n")
+         (map #(str/split % #"="))
+         (map (fn [[k v]] [(str/trim k) (str/trim v)]))
+         (into {}))))
 
 
 (comment 
