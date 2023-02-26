@@ -7,6 +7,9 @@
 
 ;; the (public) functions on this namespace are meant to mirror those you can
 ;; call from the command line.
+;;
+;; at this level the env is case sensitive i.e. case-insensitivity has
+;; to be enforced elsewhere
 
 (declare connect connected? error? error-str get-conn-status get-port)
 (defn ensure-connect
