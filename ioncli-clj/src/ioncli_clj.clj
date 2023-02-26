@@ -59,7 +59,8 @@
 
 (defn- get-conn-status [envname jinit] :not-connected)
 
-(defn- get-port [env] 58994)
+(defn- get-port [env]
+  (get (to-map (get-up-filename env)) "daemon.port"))
 
 (declare to-map)
 (defn- get-up-filename [env]
@@ -83,7 +84,6 @@
                              
           fn-symbol
           args)))))
-      
 
 (declare path-to)
 (defn- monitor-file [up-filename latch]
@@ -122,15 +122,15 @@
                       "java" "-jar" Daemon-Jar
                       jinit (str port) up-filename])))
 
-(comment 
-
-  ;;
-  (defn- to-map [props-filename]
+(defn- to-map [props-filename]
     (let [contents (slurp props-filename)]
       (->> (str/split contents #"\n")
            (map #(str/split % #"="))
            (map (fn [[k v]] [(str/trim k) (str/trim v)]))
            (into {}))))
+
+
+(comment 
 
   ;; 
   (def cs (slacker/slackerc "localhost:8080"))
