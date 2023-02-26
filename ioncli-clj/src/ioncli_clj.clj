@@ -40,7 +40,7 @@
      (connect envname jinit port)
      (println "started daemon on port" port)))
   ([envname jinit port]
-   (start-local-daemon jinit port (get-up-filename jinit))))
+   (start-local-daemon port jinit (get-up-filename jinit))))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
@@ -111,13 +111,13 @@
   "up-filename is the absolute path to file to be created when daemon is ready.
   This function is not thread-safe. Blocks until daemon is
   ready. Returns nil"
-  [jinit port up-filename]
+  [port jinit up-filename]
   (let [latch (java.util.concurrent.CountDownLatch. 1)]
     (monitor-file up-filename latch)
-    (start-local-daemon-async jinit port up-filename)
+    (start-local-daemon-async port jinit up-filename)
     (.await latch)))
  
-(defn- start-local-daemon-async [jinit port up-filename]
+(defn- start-local-daemon-async [port jinit up-filename]
   ;; could not get clojure.java.shell/sh to work asynch - it blocks
   ;; until the Java process exits
   (.exec (Runtime/getRuntime)
