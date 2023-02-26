@@ -7,7 +7,13 @@
 (declare init-rpc-server create)
 (defn -main [& [jinit port-str up-filename]]
   (let [port (Integer/parseInt port-str)
+  
+		;; the rpc server keeps the process running
+		;;
+		;; not sure whether terminating the rpc server 
+		;; causes the program to terminate
         server (init-rpc-server port)]
+		
     (ion/connect jinit)
     (create up-filename port jinit)
 
