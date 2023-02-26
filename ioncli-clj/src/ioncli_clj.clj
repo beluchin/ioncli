@@ -12,12 +12,12 @@
 (defn ensure-connect
   "Returns one of: 
   :already-connected | :connected | :env-in-use | :component-in-use "
-  ([envname-or-jinit])
-  ([envname jinit]
-   (let [conn-status (get-conn-status envname jinit)]
+  ([env-or-jinit])
+  ([env jinit]
+   (let [conn-status (get-conn-status env jinit)]
      (if-not (error? conn-status)
        (if-not (connected? conn-status)
-         (do (connect envname jinit) :connected)
+         (do (connect env jinit) :connected)
          conn-status)
        conn-status))))
 
@@ -59,7 +59,7 @@
 
 (defn- get-conn-status [envname jinit] :not-connected)
 
-(defn- get-port [env] 8080)
+(defn- get-port [env] 58994)
 
 (declare to-map)
 (defn- get-up-filename [jinit]
