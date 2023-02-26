@@ -35,12 +35,12 @@
 
 (declare get-available-port get-up-filename start-local-daemon)
 (defn- connect 
-  ([envname jinit]
+  ([env jinit]
    (let [port (get-available-port)]
-     (connect envname jinit port)
+     (connect env jinit port)
      (println "started daemon on port" port)))
-  ([envname jinit port]
-   (start-local-daemon port jinit (get-up-filename jinit))))
+  ([env jinit port]
+   (start-local-daemon port jinit (get-up-filename env))))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
@@ -62,14 +62,10 @@
 (defn- get-port [env] 58994)
 
 (declare to-map)
-(defn- get-up-filename [jinit]
-  (let [m (to-map jinit)]
-    (str (str/replace (System/getProperty "java.io.tmpdir") "\\" "/")
-         (str/join "."
-                   ["ioncli-daemon"
-                    (get m "mkv.component")
-                    (get m "mkv.cshost")
-                    (get m "mkv.csport")]))))
+(defn- get-up-filename [env]
+  (str (str/replace (System/getProperty "java.io.tmpdir") "\\" "/")
+       ".ioncli-"
+       env))
 
 (defn- new-rpc-client [env]
   (let [sc (slacker/slackerc (str "localhost:" (get-port env)))]
@@ -126,15 +122,17 @@
                       "java" "-jar" Daemon-Jar
                       jinit (str port) up-filename])))
 
-(defn- to-map [props-filename]
-  (let [contents (slurp props-filename)]
-    (->> (str/split contents #"\n")
-         (map #(str/split % #"="))
-         (map (fn [[k v]] [(str/trim k) (str/trim v)]))
-         (into {}))))
-
 (comment 
 
+  ;;
+  (defn- to-map [props-filename]
+    (let [contents (slurp props-filename)]
+      (->> (str/split contents #"\n")
+           (map #(str/split % #"="))
+           (map (fn [[k v]] [(str/trim k) (str/trim v)]))
+           (into {}))))
+
+  ;; 
   (def cs (slacker/slackerc "localhost:8080"))
   (slacker/call-remote sc 'ioncli-daemon.rpc-api 'get-record [:name :field-coll]) ;; => 42
   (slacker/close-slackerc sc)
