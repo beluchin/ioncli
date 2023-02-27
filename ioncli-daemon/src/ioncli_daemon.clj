@@ -1,11 +1,14 @@
 (ns ioncli-daemon
-  (:require [ion-clj.simple :as ion]
-            [slacker.server :as slacker]
-            ioncli-daemon.rpc-api)
-  (:gen-class))
+  (:gen-class)
+  (:require
+   [clojure.string :as str]
+   [ion-clj.simple :as ion]
+   [slacker.server :as slacker]))
 
 (declare init-rpc-server create)
-(defn -main [& [jinit port-str up-filename]]
+(defn -main
+  "returns the slacker server to be able to stop it from the REPL"
+  [& [jinit port-str up-filename]]
   (let [port (Integer/parseInt port-str)
   
 		;; the rpc server keeps the process running
@@ -16,8 +19,6 @@
 		
     (ion/connect jinit)
     (create up-filename port jinit)
-
-    ;; return the slacker server to be able to stop it from the REPL
     server))
 
 (defn- init-rpc-server [port]
@@ -25,4 +26,5 @@
 
 (defn- create [filename port jinit]
   (with-open [w (clojure.java.io/writer filename)]
-    (.write w (str "daemon.port=" port))))
+    (.write w (str/join "\n" [(slurp jinit)
+                              (str "daemon.port=" port)]))))
