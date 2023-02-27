@@ -13,6 +13,8 @@
 
 (declare connect connected? error? error-str get-conn-status get-port)
 (defn ensure-connect
+  "Connect an ion server if not already connected. On the second form,
+  to use an anonymous env, pass in nil to env"
   ([env-or-jinit])
   ([env jinit]
    (let [conn-status (get-conn-status env jinit)]
