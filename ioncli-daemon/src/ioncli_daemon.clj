@@ -3,12 +3,14 @@
   (:require
    [clojure.string :as str]
    [ion-clj.simple :as ion]
-   [slacker.server :as slacker]))
+   [slacker.server :as slacker]
+   [clojure.tools.logging :as log]))
 
 (declare init-rpc-server create)
 (defn -main
   "returns the slacker server to be able to stop it from the REPL"
   [& [jinit port-str up-filename]]
+  (log/info "starting ioncli-daemon")
   (let [port (Integer/parseInt port-str)
   
 		;; the rpc server keeps the process running

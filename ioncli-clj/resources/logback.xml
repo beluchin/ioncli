@@ -1,0 +1,28 @@
+
+<configuration>
+    <!--
+    to turn off logback log entries at load time
+    https://stackoverflow.com/a/19269816/614800
+    -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>tests.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="ch" level="WARN" /> 
+    <logger name="slacker" level="WARN" /> 
+    <root level="info">
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>

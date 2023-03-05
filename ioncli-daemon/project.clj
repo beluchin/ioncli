@@ -7,7 +7,9 @@
 
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ion-clj/ion-clj "0.1.0-SNAPSHOT"]
-                 [slacker/slacker "LATEST"]]
+                 [slacker/slacker "LATEST"]
+                 [org.clojure/tools.logging "1.2.4"]
+                 [ch.qos.logback/logback-classic "1.4.5"]]
 
   :main ^:skip-aot ioncli-daemon
   :target-path "target/%s"

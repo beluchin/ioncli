@@ -14,3 +14,4 @@ pom.xml.asc
 .cpcache/
 .cider-repl-history
 .ioncli-*
+*log
