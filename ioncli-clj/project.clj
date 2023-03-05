@@ -6,4 +6,9 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [clojure-watch "LATEST"]
                  [slacker/slacker "LATEST"]]
-  :repl-options {:init-ns ioncli-clj})
+  :repl-options {:init-ns ioncli-clj}
+
+  :main ^:skip-aot ioncli-clj.core
+  :target-path "target/%s"
+  :profiles {:uberjar {:aot :all
+                       :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}})

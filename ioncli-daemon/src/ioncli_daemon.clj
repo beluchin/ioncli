@@ -22,6 +22,7 @@
     server))
 
 (defn- init-rpc-server [port]
+  (require 'ioncli-daemon.rpc-api)
   (slacker/start-slacker-server [(the-ns 'ioncli-daemon.rpc-api)] port))
 
 (defn- create [filename port jinit]

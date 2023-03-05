@@ -9,13 +9,13 @@
 ;; call from the command line.
 ;;
 ;; at this level the env is case sensitive i.e. case-insensitivity has
-;; to be enforced elsewhere
+;; to be enforced elsewhere, it at all.
 
 (declare connect connected? error? error-str get-conn-status get-port)
 (defn ensure-connect
   "Connect an ion server if not already connected. On the second form,
   to use an anonymous env, pass in nil to env"
-  ([env-or-jinit])
+  ([jinit] (ensure-connect nil jinit))
   ([env jinit]
    (let [conn-status (get-conn-status env jinit)]
      (if-not (error? conn-status)
@@ -118,7 +118,8 @@
   (let [latch (java.util.concurrent.CountDownLatch. 1)]
     (monitor-file up-filename latch)
     (start-local-daemon-async port jinit up-filename)
-    (.await latch)))
+    (when-not (.await latch 30 java.util.concurrent.TimeUnit/SECONDS)
+      (throw (Exception. "Timed out waiting for daemon to start")))))
  
 (defn- start-local-daemon-async [port jinit up-filename]
   ;; could not get clojure.java.shell/sh to work asynch - it blocks
