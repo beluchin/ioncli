@@ -11,7 +11,8 @@
 ;; at this level the env is case sensitive i.e. case-insensitivity has
 ;; to be enforced elsewhere, it at all.
 
-(declare connect connected? error? error-str get-conn-status get-port)
+(declare connect connected? error? error-str
+         get-conn-status get-daemon-pid get-port)
 (defn ensure-connect
   "Connect an ion server if not already connected. On the second form,
   to use an anonymous env, pass in nil to env"
@@ -21,8 +22,10 @@
      (if-not (error? conn-status)
        (if-not (connected? conn-status)
          (do (connect env jinit)
-             (println "connected - daemon on port: " (get-port env)))
-         (println "already connected - daemon on port: " (get-port env)))
+             (println "connected - daemon on port:" (get-port env)
+                      "pid:" (get-daemon-pid env)))
+         (println "already connected - daemon on port:" (get-port env)
+                  "pid:" (get-daemon-pid env)))
        (println "error:" (error-str conn-status))))))
 
 (declare call-remote new-rpc-client)
@@ -60,7 +63,11 @@
 
 (defn- get-conn-status [envname jinit] :not-connected)
 
-(declare to-map get-up-filename)
+(declare to-map up-filename)
+(defn- get-daemon-pid [env]
+  (get (to-map (up-filename env)) "daemon.pid"))
+
+(declare to-map up-filename)
 (defn- get-port [env]
   (get (to-map (up-filename env)) "daemon.port"))
 

@@ -27,11 +27,18 @@
          (log/error e)
          (.getMessage e))))
 
+(declare pid)
+(defn- create [filename port jinit]
+  (with-open [w (clojure.java.io/writer filename)]
+    (.write w (str/join "\n" [(slurp jinit)
+                              (str "daemon.port=" port)
+                              (str "daemon.pid=" (pid))]))))
+
 (defn- init-rpc-server [port]
   (require 'ioncli-daemon.rpc-api)
   (slacker/start-slacker-server [(the-ns 'ioncli-daemon.rpc-api)] port))
 
-(defn- create [filename port jinit]
-  (with-open [w (clojure.java.io/writer filename)]
-    (.write w (str/join "\n" [(slurp jinit)
-                              (str "daemon.port=" port)]))))
+(defn- pid []
+  (-> (.getName (java.lang.management.ManagementFactory/getRuntimeMXBean))
+      (clojure.string/split #"@")
+      first))
