@@ -39,7 +39,7 @@
 
 (declare get-available-port get-up-filename start-local-daemon)
 (defn- connect [env jinit]
-  (start-local-daemon (get-available-port) jinit (get-up-filename env)))
+  (start-local-daemon env (get-available-port) jinit (get-up-filename env)))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
@@ -109,25 +109,26 @@
        drop-last
        (clojure.string/join "/")))
 
-(declare start-local-daemon-async)
+(declare start-local-daemon)
 (defn- start-local-daemon
   "up-filename is the absolute path to file to be created when daemon is ready.
   This function is not thread-safe. Blocks until daemon is
   ready. Returns nil"
-  [port jinit up-filename]
+  [env port jinit up-filename]
   (let [latch (java.util.concurrent.CountDownLatch. 1)]
     (monitor-file up-filename latch)
-    (start-local-daemon-async port jinit up-filename)
+    (start-local-daemon-async env port jinit up-filename)
     (when-not (.await latch 30 java.util.concurrent.TimeUnit/SECONDS)
       (throw (Exception. "Timed out waiting for daemon to start")))))
  
-(defn- start-local-daemon-async [port jinit up-filename]
+(defn- start-local-daemon-async [env port jinit up-filename]
   ;; could not get clojure.java.shell/sh to work asynch - it blocks
   ;; until the Java process exits
   (.exec (Runtime/getRuntime)
          (into-array String
                      ["cmd" "/C" "start" "/B"
-                      "java" "-jar" Daemon-Jar
+                      "java" (str "-DIONCLI_DAEMON_ENV=" env) 
+                      "-jar" Daemon-Jar
                       jinit (str port) up-filename])))
 
 (defn- to-map [props-filename]
