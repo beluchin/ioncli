@@ -20,7 +20,6 @@
         </encoder>
     </appender>
 
-    <logger name="ch" level="WARN" /> 
     <logger name="slacker" level="WARN" /> 
     <root level="info">
         <appender-ref ref="FILE" />
