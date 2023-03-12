@@ -37,9 +37,9 @@
 (defn- call-remote [client fn-symbol & args]
   (internal/call-remote client fn-symbol args))
 
-(declare get-available-port get-up-filename start-local-daemon)
+(declare get-available-port up-filename start-local-daemon)
 (defn- connect [env jinit]
-  (start-local-daemon env (get-available-port) jinit (get-up-filename env)))
+  (start-local-daemon env (get-available-port) jinit (up-filename env)))
 
 (defn- connected? [conn-status]
   (= :already-connected conn-status))
@@ -62,13 +62,7 @@
 
 (declare to-map get-up-filename)
 (defn- get-port [env]
-  (get (to-map (get-up-filename env)) "daemon.port"))
-
-(declare to-map)
-(defn- get-up-filename [env]
-  (str (str/replace (System/getProperty "java.io.tmpdir") "\\" "/")
-       ".ioncli-"
-       env))
+  (get (to-map (up-filename env)) "daemon.port"))
 
 (defn- new-rpc-client [env]
   (let [sc (slacker/slackerc (str "localhost:" (get-port env)))]
@@ -138,6 +132,10 @@
          (map (fn [[k v]] [(str/trim k) (str/trim v)]))
          (into {}))))
 
+(defn- up-filename [env]
+  (str (str/replace (System/getProperty "user.dir") "\\" "/")
+       "/.ioncli-" 
+       env))
 
 (comment 
 
