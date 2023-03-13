@@ -110,7 +110,7 @@
        drop-last
        (clojure.string/join "/")))
 
-(declare start-local-daemon)
+(declare start-local-daemon-async)
 (defn- start-local-daemon
   "up-filename is the absolute path to file to be created when daemon is ready.
   This function is not thread-safe. Blocks until daemon is
