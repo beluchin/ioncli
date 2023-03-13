@@ -5,7 +5,8 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [clojure-watch "LATEST"]
-                 [slacker/slacker "LATEST"]]
+                 [slacker/slacker "LATEST"]
+                 [ch.qos.logback/logback-classic "1.4.5"]]
   :repl-options {:init-ns ioncli-clj}
 
   :main ^:skip-aot ioncli-clj.core
