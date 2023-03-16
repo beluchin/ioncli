@@ -9,7 +9,7 @@
 ;; call from the command line.
 ;;
 ;; at this level the env is case sensitive i.e. case-insensitivity has
-;; to be enforced elsewhere, it at all.
+;; to be enforced elsewhere, if at all.
 
 (declare connect connected? error? error-str
          get-conn-status get-daemon-pid get-port)
@@ -116,16 +116,17 @@
   This function is not thread-safe. Blocks until daemon is
   ready. Returns nil"
   [env port jinit up-filename]
-  (let [latch (java.util.concurrent.CountDownLatch. 1)]
-    (monitor-file up-filename latch)
-    (start-local-daemon-async env port jinit up-filename)
-    (when-not (.await latch 30 java.util.concurrent.TimeUnit/SECONDS)
-      (throw (Exception. "Timed out waiting for daemon to start")))))
+  (let [latch (java.util.concurrent.CountDownLatch. 1)
+        stop-file-monitor-fn (monitor-file up-filename latch)]
+    (try (do (start-local-daemon-async env port jinit up-filename)
+             (when-not (.await latch 5 java.util.concurrent.TimeUnit/SECONDS)
+               (throw (Exception. "Timed out waiting for daemon to start"))))
+         (finally (stop-file-monitor-fn)))))
  
 (defn- start-local-daemon-async [env port jinit up-filename]
   ;; could not get clojure.java.shell/sh to work asynch - it blocks
   ;; until the Java process exits
-  (.exec (Runtime/getRuntime)
+  #_(.exec (Runtime/getRuntime)
          (into-array String
                      ["cmd" "/C" "start" "/B"
                       "java" (str "-DIONCLI_DAEMON_ENV=" env) 
