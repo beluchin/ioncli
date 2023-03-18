@@ -71,6 +71,22 @@
 (defn- get-port [env]
   (get (to-map (up-filename env)) "daemon.port"))
 
+(declare path-to)
+(defn- monitor-file [up-filename latch]
+  (ensure-delete up-filename)
+  (fwatch/start-watch [{:path (path-to up-filename)
+
+                        ;; monitoring for :create has a race condition
+                        ;; in which the monitor is invoked before the
+                        ;; contents of the file are written
+                        :event-types [:modify]
+                        
+                        :callback (fn [_ abs-path]
+                                    (when (= (java.io.File. abs-path)
+                                             (java.io.File. up-filename))
+                                      (.countDown latch)))
+                        :options {:recursive false}}]))
+
 (defn- new-rpc-client [env]
   (let [sc (slacker/slackerc (str "localhost:" (get-port env)))]
     (reify
@@ -87,22 +103,6 @@
                              
           fn-symbol
           args)))))
-
-(declare path-to)
-(defn- monitor-file [up-filename latch]
-  (ensure-delete up-filename)
-  (fwatch/start-watch [{:path (path-to up-filename)
-
-                        ;; monitoring for :create has a race condition
-                        ;; in which the monitor is invoked before the
-                        ;; contents of the file are written
-                        :event-types [:modify]
-                        
-                        :callback (fn [_ abs-path]
-                                    (when (= (java.io.File. abs-path)
-                                             (java.io.File. up-filename))
-                                      (.countDown latch)))
-                        :options {:recursive false}}]))
 
 (defn- path-to [filename-abs]
   {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
