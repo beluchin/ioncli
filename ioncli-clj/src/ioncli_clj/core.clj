@@ -8,4 +8,9 @@
     (eval (read-string
             (str "(ioncli-clj/" fn-name
                  (clojure.string/join " " quoted-fn-args)
-                 ")")))))
+                 ")")))
+
+    ;; the file monitoring service uses futures. Hence, we need to
+    ;; terminate them explicitly.
+    ;; https://stackoverflow.com/a/27014732/614800
+    (shutdown-agents)))

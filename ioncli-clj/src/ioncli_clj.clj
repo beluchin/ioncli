@@ -72,20 +72,22 @@
   (get (to-map (up-filename env)) "daemon.port"))
 
 (declare path-to)
-(defn- monitor-file [up-filename latch]
+(defn- monitor-file
+  "returns a no-arg function to call to stop monitoring"
+  [up-filename latch]
   (ensure-delete up-filename)
   (fwatch/start-watch [{:path (path-to up-filename)
 
-                        ;; monitoring for :create has a race condition
-                        ;; in which the monitor is invoked before the
-                        ;; contents of the file are written
-                        :event-types [:modify]
-                        
-                        :callback (fn [_ abs-path]
-                                    (when (= (java.io.File. abs-path)
-                                             (java.io.File. up-filename))
-                                      (.countDown latch)))
-                        :options {:recursive false}}]))
+                          ;; monitoring for :create has a race condition
+                          ;; in which the monitor is invoked before the
+                          ;; contents of the file are written
+                          :event-types [:modify]
+                          
+                          :callback (fn [_ abs-path]
+                                      (when (= (java.io.File. abs-path)
+                                               (java.io.File. up-filename))
+                                        (.countDown latch)))
+                          :options {:recursive false}}]))
 
 (defn- new-rpc-client [env]
   (let [sc (slacker/slackerc (str "localhost:" (get-port env)))]
@@ -126,7 +128,7 @@
 (defn- start-local-daemon-async [env port jinit up-filename]
   ;; could not get clojure.java.shell/sh to work asynch - it blocks
   ;; until the Java process exits
-  #_(.exec (Runtime/getRuntime)
+  (.exec (Runtime/getRuntime)
          (into-array String
                      ["cmd" "/C" "start" "/B"
                       "java" (str "-DIONCLI_DAEMON_ENV=" env) 
