@@ -1,3 +1,4 @@
+
 (ns ioncli-clj.core
   (:gen-class)
   (:require ioncli-clj))
@@ -6,9 +7,9 @@
   (let [fn-name (first args)
         quoted-fn-args (map #(str "\"" % "\"") (rest args))]
     (eval (read-string
-            (str "(ioncli-clj/" fn-name
-                 (clojure.string/join " " quoted-fn-args)
-                 ")")))
+            (format "(ioncli-clj/%s %s)"
+                    fn-name
+                    (clojure.string/join " " quoted-fn-args))))
 
     ;; the file monitoring service uses futures. Hence, we need to
     ;; terminate them explicitly.
