@@ -12,6 +12,7 @@
                     (clojure.string/join " " quoted-fn-args))))
 
     ;; the file monitoring service uses futures. Hence, we need to
-    ;; terminate them explicitly.
+    ;; terminate them explicitly - here instead of in the ensure-connect
+    ;; function, because the function may run inside the REPL.
     ;; https://stackoverflow.com/a/27014732/614800
     (shutdown-agents)))
