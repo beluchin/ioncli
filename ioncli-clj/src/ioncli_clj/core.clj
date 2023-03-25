@@ -1,21 +1,20 @@
-
 (ns ioncli-clj.core
   (:gen-class)
-  (:require ioncli-clj))
+  (:require
+   [slacker.client :as slacker]))
 
 (declare ->form)
 (defn -main [& args]
   (let [form (->form args)]
     (eval form)
 
-    ;; the file monitoring service uses futures. Hence, we need to
-    ;; terminate them explicitly - here instead of in the ensure-connect
-    ;; function, because the function may run inside the REPL.
+    (slacker/shutdown-slacker-client-factory)
     ;; https://stackoverflow.com/a/27014732/614800
     (shutdown-agents)))
 
 (declare kwds-as-strs)
 (defn- ->form [args]
+  (require 'ioncli-clj)
   (let [fn-form (read-string (str "ioncli-clj/" (first args)))
         arg-forms (map #(-> %
                             read-string
@@ -26,4 +25,8 @@
                        (rest args))]
     (reverse (into `(~fn-form) arg-forms))))
 
-(defn- kwds-as-strs [coll] (map #(or (and (keyword? %) (name %)) %) coll))
+(defn- kwds-as-strs [coll]
+  (letfn [(kwd-as-str [x] (if (keyword? x) (name x) x))]
+    (cond
+      (map? coll) (update-keys coll kwd-as-str)
+      :else (vec (map kwd-as-str coll)))))

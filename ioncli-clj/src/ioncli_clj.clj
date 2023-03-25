@@ -33,7 +33,7 @@
   ([name field-coll])
   ([env name field-coll]
    (with-open [client (new-rpc-client env)]
-     (call-remote client 'get-record name field-coll))))
+     (println (call-remote client 'get-record name field-coll)))))
 
 (def ^:private ^:const Daemon-Jar "resources/ioncli-daemon.jar")
 
