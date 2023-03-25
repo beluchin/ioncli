@@ -6,7 +6,7 @@
    [slacker.server :as slacker]
    [clojure.tools.logging :as log]))
 
-(declare init-rpc-server create)
+(declare create init-rpc-server pid)
 (defn -main
   "returns the slacker server to be able to stop it from the REPL"
   [& [jinit port-str up-filename :as args]]
@@ -21,7 +21,7 @@
 	  
          (ion/connect jinit)
          (create up-filename port jinit)
-         (log/info "started")
+         (log/info "started - pid:" (pid))
          server)
        (catch Exception e
          (log/error e)
