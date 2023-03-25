@@ -121,7 +121,7 @@
   (let [latch (java.util.concurrent.CountDownLatch. 1)
         stop-file-monitor-fn (monitor-file up-filename latch)]
     (try (do (start-local-daemon-async env port jinit up-filename)
-             (when-not (.await latch 5 java.util.concurrent.TimeUnit/SECONDS)
+             (when-not (.await latch 30 java.util.concurrent.TimeUnit/SECONDS)
                (throw (Exception. "Timed out waiting for daemon to start"))))
          (finally (stop-file-monitor-fn)))))
  
