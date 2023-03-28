@@ -1,3 +1,9 @@
 mkv.component = my_component
-mkv.cshost = remote_host
+   mkv.cshost = remote_host  
+
+
+# a comment line
+
 mkv.csport = 42
+
+
