@@ -2,8 +2,10 @@
   (:require
    [clojure-watch.core :as fwatch]
    [clojure.string :as str]
-   [ioncli-clj.internal :as internal]
    [slacker.client :as slacker]))
+
+(defprotocol ^:private RemoteCalling
+  (call-remote [client fn-symbol args]))
 
 ;; the (public) functions on this namespace are meant to mirror those you can
 ;; call from the command line.
@@ -28,17 +30,14 @@
                   "pid:" (get-daemon-pid env)))
        (println "error:" (error-str conn-status))))))
 
-(declare call-remote new-rpc-client)
+(declare new-rpc-client)
 (defn get-record
   ([name field-coll])
   ([env name field-coll]
    (with-open [client (new-rpc-client env)]
-     (println (call-remote client 'get-record name field-coll)))))
+     (println (call-remote client 'get-record [name field-coll])))))
 
 (def ^:private ^:const Daemon-Jar "resources/ioncli-daemon.jar")
-
-(defn- call-remote [client fn-symbol & args]
-  (internal/call-remote client fn-symbol args))
 
 (declare get-available-port up-filename start-local-daemon)
 (defn- connect [env jinit]
@@ -95,16 +94,16 @@
       java.lang.AutoCloseable
       (close [_] (slacker/close-slackerc sc))
 
-      internal/RemoteCalling
+      RemoteCalling
       (call-remote [client fn-symbol args]
         (slacker/call-remote
-          sc
+               sc
 
-          ;; the name of the remote namespace 
-          'ioncli-daemon.rpc-api
+               ;; the name of the remote namespace 
+               'ioncli-daemon.rpc-api
                              
-          fn-symbol
-          args)))))
+               fn-symbol
+               args)))))
 
 (defn- path-to [filename-abs]
   {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}
