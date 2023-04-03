@@ -5,7 +5,9 @@
    [slacker.client :as slacker]))
 
 (defprotocol ^:private RemoteCalling
-  (call-remote [client fn-symbol args]))
+  (call-remote
+    [client fn-symbol args]
+    [client fn-symbol args {:keys [timeout]}]))
 
 ;; the (public) functions on this namespace are meant to mirror those you can
 ;; call from the command line.
@@ -13,29 +15,34 @@
 ;; at this level the env is case sensitive i.e. case-insensitivity has
 ;; to be enforced elsewhere, if at all.
 
-(declare connect connected? error? error-str
-         get-conn-status get-daemon-pid get-port)
+(declare connect connected? get-conn-status get-daemon-pid get-port)
 (defn ensure-connect
-  "Connect an ion server if not already connected. On the second form,
-  to use an anonymous env, pass in nil to env"
+  "Connect an ion server if not already connected. If already connected
+  to an environment with the given name, it validates the jinit
+  settings match"
   ([jinit] (ensure-connect nil jinit))
   ([env jinit]
-   (let [conn-status (get-conn-status env jinit)]
-     (if-not (error? conn-status)
-       (if-not (connected? conn-status)
-         (do (connect env jinit)
-             (println "connected - daemon on port:" (get-port env)
-                      "pid:" (get-daemon-pid env)))
-         (println "already connected - daemon on port:" (get-port env)
-                  "pid:" (get-daemon-pid env)))
-       (println "error:" (error-str conn-status))))))
+   (if (connected? (get-conn-status env))
+     (println "already connected - daemon on port:" (get-port env)
+              "pid:" (get-daemon-pid env))
+     (do (connect env jinit)
+         (println "connected - daemon on port:" (get-port env)
+                  "pid:" (get-daemon-pid env))))))
 
 (declare new-rpc-client)
 (defn get-record
   ([name field-coll])
   ([env name field-coll]
-   (with-open [client (new-rpc-client env)]
-     (println (call-remote client 'get-record [name field-coll])))))
+   (if-let [client (new-rpc-client env)]
+     (try (if
+              ;; this allows for a quick response to the user if the
+              ;; daemon is not responsive
+              (is-daemon-responsive? client)
+            
+              (println (call-remote client 'get-record [name field-coll]))
+              (println "not connected"))
+          (finally (.close client)))
+     (println "not connected"))))
 
 (def ^:private ^:const Daemon-Jar "resources/ioncli-daemon.jar")
 
@@ -49,18 +56,19 @@
 (defn- ensure-delete [up-filename]
   (clojure.java.io/delete-file up-filename :silently))
 
-(defn- error? [conn-status]
-  (or (= :env-in-use conn-status)
-      (= :component-in-use conn-status)))
-
-(defn- error-str [conn-status] (name conn-status))
- 
 (defn- get-available-port []
   (let [s (java.net.ServerSocket. 0)]
     (.close s)
     (.getLocalPort s)))
 
-(defn- get-conn-status [envname jinit] :not-connected)
+(declare is-daemon-responsive? new-rpc-client)
+(defn- get-conn-status [env]
+  (if-let [client (new-rpc-client env)]
+    (try (if (is-daemon-responsive? client)
+           :already-connected
+           :not-connected)
+         (finally (.close client)))
+    :not-connected))
 
 (declare to-map up-filename)
 (defn- get-daemon-pid [env]
@@ -69,6 +77,12 @@
 (declare to-map up-filename)
 (defn- get-port [env]
   (get (to-map (up-filename env)) "daemon.port"))
+
+(declare new-rpc-client)
+(defn- is-daemon-responsive? [client]
+  (try (do (call-remote client 'ping [] {:timeout 500})
+           true)
+       (catch Exception _ false)))
 
 (declare path-to)
 (defn- monitor-file
@@ -88,22 +102,30 @@
                                         (.countDown latch)))
                           :options {:recursive false}}]))
 
+(declare new-rpc-client-for-port)
 (defn- new-rpc-client [env]
-  (let [sc (slacker/slackerc (str "localhost:" (get-port env)))]
+  (when (.exists (clojure.java.io/file (up-filename env)))
+    (new-rpc-client-for-port (get-port env))))
+
+(defn- new-rpc-client-for-port [port]
+  (let [sc (slacker/slackerc (str "localhost:" port))]
     (reify
       java.lang.AutoCloseable
       (close [_] (slacker/close-slackerc sc))
 
       RemoteCalling
       (call-remote [client fn-symbol args]
+        (call-remote client fn-symbol args {}))
+      (call-remote [client fn-symbol args {:keys [timeout] :as opts}]
         (slacker/call-remote
-               sc
+          sc
 
-               ;; the name of the remote namespace 
-               'ioncli-daemon.rpc-api
-                             
-               fn-symbol
-               args)))))
+          ;; the name of the remote namespace 
+          'ioncli-daemon.rpc-api
+            
+          fn-symbol
+          args
+          opts)))))
 
 (defn- path-to [filename-abs]
   {:pre [(> (count (re-seq #"/" filename-abs)) 1)]}

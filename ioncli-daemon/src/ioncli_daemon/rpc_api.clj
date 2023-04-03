@@ -5,3 +5,5 @@
   [name field-coll]
   {"Id" "A_RECORD"
    "Field" 42})
+
+(defn ping [])
