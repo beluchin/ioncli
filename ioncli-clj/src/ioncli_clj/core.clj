@@ -15,6 +15,7 @@
 (declare kwds-as-strs)
 (defn- ->form [args]
   (require 'ioncli-clj)
+  (import 'com.iontrading.jmkv.MkvFieldType)
   (let [fn-form (read-string (str "ioncli-clj/" (first args)))
         arg-forms (map #(-> %
                             read-string

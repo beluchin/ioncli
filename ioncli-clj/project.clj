@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [clojure-watch "LATEST"]
                  [slacker/slacker "LATEST"]
+                 [com.iontrading/jmkv "152"]
                  [ch.qos.logback/logback-classic "1.4.5"]]
   :repl-options {:init-ns ioncli-clj}
 
