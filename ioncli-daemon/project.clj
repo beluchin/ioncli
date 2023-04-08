@@ -8,6 +8,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ion-clj/ion-clj "0.1.0-SNAPSHOT"]
                  [slacker/slacker "LATEST"]
+                 [potemkin/potemkin "0.4.6"]
                  [org.clojure/tools.logging "1.2.4"]
                  [ch.qos.logback/logback-classic "1.4.5"]]
 

@@ -15,21 +15,42 @@
 ;; at this level the env is case sensitive i.e. case-insensitivity has
 ;; to be enforced elsewhere, if at all.
 
-(declare connect connected? get-conn-status get-daemon-pid get-port)
+(declare connect connected? get-conn-status get-daemon-pid get-port matches?
+         up-filename)
 (defn ensure-connect
   "Connect an ion server if not already connected. If already connected
   to an environment with the given name, it validates the jinit
   settings match"
   ([jinit] (ensure-connect nil jinit))
   ([env jinit]
-   (if (connected? (get-conn-status env))
-     (println "already connected - daemon on port:" (get-port env)
-              "pid:" (get-daemon-pid env))
-     (do (connect env jinit)
-         (println "connected - daemon on port:" (get-port env)
-                  "pid:" (get-daemon-pid env))))))
+   (let [conn-status (get-conn-status env)]
+     (if (connected? conn-status)
+       (if (matches? env jinit)
+         (println "already connected - daemon on port:" (get-port env)
+                  "pid:" (get-daemon-pid env))
+         (do (println "already connected but jinit settings don't match")
+             (println "check settings in " (up-filename env))))
+       (do (connect env jinit)
+           (println "connected - daemon on port:" (get-port env)
+                    "pid:" (get-daemon-pid env)))))))
 
-(declare new-rpc-client)
+(declare is-daemon-responsive? new-rpc-client)
+(defn create-record
+  ([name field->type])
+  ([env name field->type]
+   (if-let [client (new-rpc-client env)]
+     (try (if
+              ;; this allows for a quick response to the user if the
+              ;; daemon is not responsive
+              (is-daemon-responsive? client)
+            
+              (when-let [result (call-remote client 'create-record [name field->type])]
+                (println result))
+              (println "not connected"))
+          (finally (.close client)))
+     (println "not connected"))))
+
+(declare is-daemon-responsive? new-rpc-client)
 (defn get-record
   ([name field-coll])
   ([env name field-coll]
@@ -83,6 +104,8 @@
   (try (do (call-remote client 'ping [] {:timeout 500})
            true)
        (catch Exception _ false)))
+
+(defn- matches? [env jinit] true)
 
 (declare path-to)
 (defn- monitor-file
