@@ -16,6 +16,7 @@
 ;; to be enforced elsewhere, if at all.
 
 (declare connect connected? get-conn-status get-daemon-pid get-port matches?
+
          up-filename)
 (defn ensure-connect
   "Connect an ion server if not already connected. If already connected
@@ -105,7 +106,10 @@
            true)
        (catch Exception _ false)))
 
-(defn- matches? [env jinit] true)
+(defn- matches? [env jinit]
+  (let [ks ["mkv.component" "mkv.cshost" "mkv.csport"]]
+    (= (select-keys (to-map (up-filename env)) ks)
+       (select-keys (to-map jinit) ks))))
 
 (declare path-to)
 (defn- monitor-file
@@ -182,6 +186,9 @@
 (defn- to-map [props-filename]
   (let [contents (slurp props-filename)]
     (->> (str/split contents #"\n")
+         (map str/trim)
+         (filter #(not (str/starts-with? % "#")))
+         (filter #(not (str/blank? %)))
          (map #(str/split % #"="))
          (map (fn [[k v]] [(str/trim k) (str/trim v)]))
          (into {}))))
