@@ -16,7 +16,6 @@
 ;; to be enforced elsewhere, if at all.
 
 (declare connect connected? get-conn-status get-daemon-pid get-port matches?
-
          up-filename)
 (defn ensure-connect
   "Connect an ion server if not already connected. If already connected
@@ -35,36 +34,24 @@
            (println "connected - daemon on port:" (get-port env)
                     "pid:" (get-daemon-pid env)))))))
 
-(declare is-daemon-responsive? new-rpc-client)
+(declare with-client)
 (defn create-record
   ([name field->type])
   ([env name field->type]
-   (if-let [client (new-rpc-client env)]
-     (try (if
-              ;; this allows for a quick response to the user if the
-              ;; daemon is not responsive
-              (is-daemon-responsive? client)
-            
-              (when-let [result (call-remote client 'create-record [name field->type])]
-                (println result))
-              (println "not connected"))
-          (finally (.close client)))
-     (println "not connected"))))
+   #_(call-remote env 'create-record [name field->type])
+   (with-client env
+     #(when-let [result (call-remote % 'create-record [name field->type])]
+        (println result))
+     #(println "not connected"))))
 
-(declare is-daemon-responsive? new-rpc-client)
+(declare with-client)
 (defn get-record
   ([name field-coll])
   ([env name field-coll]
-   (if-let [client (new-rpc-client env)]
-     (try (if
-              ;; this allows for a quick response to the user if the
-              ;; daemon is not responsive
-              (is-daemon-responsive? client)
-            
-              (println (call-remote client 'get-record [name field-coll]))
-              (println "not connected"))
-          (finally (.close client)))
-     (println "not connected"))))
+   (with-client env
+     #(when-let [result (call-remote % 'get-record [name field-coll])]
+        (println result))
+     #(println "not connected"))))
 
 (def ^:private ^:const Daemon-Jar "resources/ioncli-daemon.jar")
 
@@ -83,14 +70,9 @@
     (.close s)
     (.getLocalPort s)))
 
-(declare is-daemon-responsive? new-rpc-client)
+(declare with-client)
 (defn- get-conn-status [env]
-  (if-let [client (new-rpc-client env)]
-    (try (if (is-daemon-responsive? client)
-           :already-connected
-           :not-connected)
-         (finally (.close client)))
-    :not-connected))
+  (with-client env (constantly :already-connected) (constantly :not-connected)))
 
 (declare to-map up-filename)
 (defn- get-daemon-pid [env]
@@ -197,6 +179,14 @@
   (str (str/replace (System/getProperty "user.dir") "\\" "/")
        "/.ioncli-" 
        env))
+
+(defn- with-client [env on-connected on-not-connected]
+  (if-let [client (new-rpc-client env)]
+    (try (if (is-daemon-responsive? client)
+           (on-connected client)
+           (on-not-connected))
+         (finally (.close client)))
+    (on-not-connected)))
 
 (comment 
 
